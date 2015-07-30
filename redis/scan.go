@@ -62,6 +62,9 @@ func convertAssignBytes(d reflect.Value, s []byte) (err error) {
 		} else {
 			d.SetBytes(s)
 		}
+	case reflect.Ptr:
+		d.Set(reflect.New(d.Type().Elem()))
+		convertAssignBytes(d.Elem(), s)
 	default:
 		err = cannotConvert(d, s)
 	}
@@ -507,6 +510,11 @@ func flattenStruct(args Args, v reflect.Value) Args {
 	ss := structSpecForType(v.Type())
 	for _, fs := range ss.l {
 		fv := v.FieldByIndex(fs.index)
+		if fv.Kind() == reflect.Ptr && fv.IsNil() {
+			continue
+		}
+		for ; fv.Kind() == reflect.Ptr; fv = fv.Elem() {
+		}
 		args = append(args, fs.name, fv.Interface())
 	}
 	return args
